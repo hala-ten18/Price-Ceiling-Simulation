@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Ceiling Market Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f3e8ff 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #6b7280;
+            font-size: 1.1em;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+        
+        .canvas-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        canvas {
+            width: 100%;
+            height: auto;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        
+        .explanation-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .explanation-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .explanation-text {
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .card h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #1f2937;
+        }
+        
+        .slider-container {
+            margin-bottom: 20px;
+        }
+        
+        .slider-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #374151;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #d1d5db;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        
+        .slider-range {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .checkbox-container label {
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .black-market-info {
+            font-size: 0.85em;
+            color: #7c3aed;
+            background: #f5f3ff;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        
+        .metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-radius: 6px;
+        }
+        
+        .metric-cs {
+            background: #dcfce7;
+        }
+        
+        .metric-ps {
+            background: #dbeafe;
+        }
+        
+        .metric-dwl {
+            background: #fee2e2;
+        }
+        
+        .metric-shortage {
+            background: #fef3c7;
+        }
+        
+        .metric-label {
+            font-weight: 600;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .red-text { color: #dc2626; }
+        .gray-text { color: #6b7280; }
+        .green-text { color: #16a34a; }
+        .blue-text { color: #2563eb; }
+        
+        /* STYLES FOR CALCULATION BOX */
+        .calculation-box {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        .calculation-box h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+
+        .calculation-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .calc-item {
+            padding: 15px;
+            border-radius: 8px;
+            background: #f9fafb;
+            border-left: 4px solid;
+            line-height: 1.8;
+            font-size: 0.95em;
+        }
+
+        .calc-cs { border-left-color: #16a34a; }
+        .calc-ps { border-left-color: #2563eb; }
+        .calc-dwl { border-left-color: #dc2626; }
+        .calc-shortage { border-left-color: #ca8a04; }
+        .calc-blackmarket { border-left-color: #7c3aed; }
+
+        .calc-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        /* Updated class for plain math notation */
+        .plain-formula {
+            font-family: 'Courier New', monospace;
+            background: #eeeeee;
+            padding: 5px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        .formula-line {
+            display: block;
+            margin-top: 5px;
+        }
+        
+        /* Styles for the new emoji legend section */
+        .emoji-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        .emoji-icon {
+            font-size: 1.2em;
+            width: 20px; /* To align descriptions vertically */
+            text-align: center;
+        }
+
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .calculation-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Price Ceiling Market Simulation</h1>
+            <p>Interactive demonstration of supply, demand, and government price controls</p>
+        </div>
+        
+        <div class="main-grid">
+            <div>
+                <div class="canvas-container">
+                    <canvas id="marketCanvas" width="800" height="550"></canvas>
+                </div>
+                
+                <div class="explanation-box">
+                    <div class="explanation-title" id="explanationTitle"></div>
+                    <div class="explanation-text" id="explanationText"></div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="card">
+                    <h3>🎛️ Controls</h3>
+                    <div class="slider-container">
+                        <label class="slider-label">
+                            Price Ceiling: $<span id="ceilingValue">6.0</span>
+                        </label>
+                        <input type="range" id="ceilingSlider" min="0" max="10" step="0.1" value="6">
+                        <div class="slider-range">
+                            <span>$0</span>
+                            <span>$10</span>
+                        </div>
+                    </div>
+                    
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="blackMarketCheck">
+                        <label for="blackMarketCheck">Show Black Market 💰</label>
+                    </div>
+                    <div id="blackMarketInfo" class="black-market-info" style="display: none;"></div>
+                </div>
+                
+                <div class="card">
+                    <h3>📊 Economic Impact</h3>
+                    <div class="metrics">
+                        <div class="metric metric-cs">
+                            <span class="metric-label green-text">Consumer Surplus</span>
+                            <span class="metric-value green-text" id="csValue">$0.00</span>
+                        </div>
+                        <div class="metric metric-ps">
+                            <span class="metric-label blue-text">Producer Surplus</span>
+                            <span class="metric-value blue-text" id="psValue">$0.00</span>
+                        </div>
+                        <div class="metric metric-dwl">
+                            <span class="metric-label red-text">Deadweight Loss</span>
+                            <span class="metric-value red-text" id="dwlValue">$0.00</span>
+                        </div>
+                        <div class="metric metric-shortage" id="shortageMetric" style="display: none;">
+                            <span class="metric-label" style="color: #ca8a04;">Shortage</span>
+                            <span class="metric-value" style="color: #ca8a04;" id="shortageValue">0 units</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📖 Legend</h3>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(34, 197, 94, 0.4);"></div>
+                            <span>Consumer Surplus</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(59, 130, 246, 0.4);"></div>
+                            <span>Producer Surplus</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(239, 68, 68, 0.4);"></div>
+                            <span>Deadweight Loss</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(250, 204, 21, 0.3);"></div>
+                            <span>Shortage Area</span>
+                        </div>
+                    </div>
+
+                    <!-- EMOJI LEGEND ADDED HERE -->
+                    <h4 style="font-size: 1.2em; font-weight: bold; margin-top: 20px; margin-bottom: 5px; color: #1f2937;">😀 Emoji Legend</h4>
+                    <div class="legend" style="gap: 5px;">
+                        <div class="emoji-legend-item">
+                            <span class="emoji-icon">😃</span>
+                            <span>Consumer benefiting from low price</span>
+                        </div>
+                        <div class="emoji-legend-item">
+                            <span class="emoji-icon">😞</span>
+                            <span>Producer losing revenue</span>
+                        </div>
+                        <div class="emoji-legend-item">
+                            <span class="emoji-icon">😤</span>
+                            <span>Consumers unable to buy product</span>
+                        </div>
+                        <div class="emoji-legend-item">
+                            <span class="emoji-icon">💰</span>
+                            <span>Black market money</span>
+                        </div>
+                        <div class="emoji-legend-item">
+                            <span class="emoji-icon">🤝</span>
+                            <span>Black market transaction</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW CALCULATION BOX -->
+        <div class="calculation-box">
+            <h3>🧮 Step-by-Step Calculations </h3>
+            <div id="calculationGrid" class="calculation-grid">
+                <!-- Calculation details will be inserted here by JavaScript -->
+            </div>
+        </div>
+        <!-- END NEW CALCULATION BOX -->
+    </div>
+
+    <script>
+        // Market parameters
+        const P0 = 5;
+        const Q0 = 50;
+        
+        // Supply and demand functions
+        const demandQ = (p) => 100 - 10 * p;
+        const supplyQ = (p) => 10 * p;
+        const demandP = (q) => (100 - q) / 10;
+        const supplyP = (q) => q / 10;
+        
+        // State
+        let priceCeiling = 6;
+        let showBlackMarket = false;
+        
+        // DOM elements
+        const canvas = document.getElementById('marketCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('ceilingSlider');
+        const ceilingValueSpan = document.getElementById('ceilingValue');
+        const blackMarketCheck = document.getElementById('blackMarketCheck');
+        const blackMarketInfo = document.getElementById('blackMarketInfo');
+        const explanationTitle = document.getElementById('explanationTitle');
+        const explanationText = document.getElementById('explanationText');
+        const csValue = document.getElementById('csValue');
+        const psValue = document.getElementById('psValue');
+        const dwlValue = document.getElementById('dwlValue');
+        const shortageValue = document.getElementById('shortageValue');
+        const shortageMetric = document.getElementById('shortageMetric');
+        const calculationGrid = document.getElementById('calculationGrid');
+        
+        // Event listeners
+        slider.addEventListener('input', (e) => {
+            priceCeiling = parseFloat(e.target.value);
+            ceilingValueSpan.textContent = priceCeiling.toFixed(1);
+            update();
+        });
+        
+        blackMarketCheck.addEventListener('change', (e) => {
+            showBlackMarket = e.target.checked;
+            update();
+        });
+        
+        function update() {
+            drawGraph();
+            updateExplanation();
+            updateMetrics();
+            updateCalculationBox();
+        }
+        
+        function drawGraph() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const margin = 70;
+            const graphWidth = width - 2 * margin;
+            const graphHeight = height - 2 * margin;
+            
+            const xScale = (q) => margin + (q / 100) * graphWidth;
+            const yScale = (p) => height - margin - (p / 10) * graphHeight;
+            
+            const Qd = demandQ(priceCeiling);
+            const Qs = supplyQ(priceCeiling);
+            const shortage = Math.max(0, Qd - Qs);
+            const blackMarketPrice = shortage > 0 ? demandP(Qs) : priceCeiling;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw shaded areas
+            if (priceCeiling < P0) {
+                // Consumer Surplus (Area below D, above Pc, up to Qs) - Trapezoid
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(xScale(0), yScale(priceCeiling)); // Start at (0, Pc)
+                ctx.lineTo(xScale(Qs), yScale(priceCeiling)); // To (Qs, Pc)
+                ctx.lineTo(xScale(Qs), yScale(demandP(Qs))); // To (Qs, Pd(Qs))
+                ctx.lineTo(xScale(0), yScale(10)); // To (0, Pmax=10)
+                ctx.closePath();
+                ctx.fill();
+                
+                // Producer Surplus (Area below Pc, above S, up to Qs) - Triangle
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(xScale(0), yScale(0)); // Start at (0, 0)
+                ctx.lineTo(xScale(Qs), yScale(priceCeiling)); // To (Qs, Pc)
+                ctx.lineTo(xScale(0), yScale(priceCeiling)); // To (0, Pc)
+                ctx.closePath();
+                ctx.fill();
+                
+                // Deadweight Loss (Triangle)
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(xScale(Qs), yScale(demandP(Qs))); // Pd(Qs)
+                ctx.lineTo(xScale(Q0), yScale(P0)); // Equilibrium E
+                ctx.lineTo(xScale(Qs), yScale(supplyP(Qs))); // Ps(Qs) = Pc
+                ctx.closePath();
+                ctx.fill();
+                
+                // Shortage area (Rectangle Qs to Qd at height Pc)
+                ctx.fillStyle = 'rgba(250, 204, 21, 0.2)';
+                ctx.fillRect(xScale(Qs), yScale(priceCeiling), xScale(Qd) - xScale(Qs), yScale(0) - yScale(priceCeiling));
+            } else {
+                // Normal Equilibrium (P_ceiling is non-binding)
+                // Consumer Surplus (Triangle above P0)
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(xScale(0), yScale(10));
+                ctx.lineTo(xScale(Q0), yScale(P0));
+                ctx.lineTo(xScale(0), yScale(P0));
+                ctx.closePath();
+                ctx.fill();
+                
+                // Producer Surplus (Triangle below P0)
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(xScale(0), yScale(0));
+                ctx.lineTo(xScale(Q0), yScale(P0));
+                ctx.lineTo(xScale(0), yScale(P0));
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin, margin);
+            ctx.lineTo(margin, height - margin);
+            ctx.lineTo(width - margin, height - margin);
+            ctx.stroke();
+            
+            // Draw tick marks
+            ctx.fillStyle = '#666';
+            ctx.font = '13px Arial';
+            ctx.textAlign = 'center';
+            
+            for (let q = 0; q <= 100; q += 20) {
+                const x = xScale(q);
+                ctx.beginPath();
+                ctx.moveTo(x, height - margin);
+                ctx.lineTo(x, height - margin + 5);
+                ctx.stroke();
+                ctx.fillText(q, x, height - margin + 20);
+            }
+            
+            ctx.textAlign = 'right';
+            for (let p = 0; p <= 10; p += 2) {
+                const y = yScale(p);
+                ctx.beginPath();
+                ctx.moveTo(margin, y);
+                ctx.lineTo(margin - 5, y);
+                ctx.stroke();
+                ctx.fillText(`$${p}`, margin - 10, y + 5);
+            }
+            
+            // Axis labels
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 15px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Quantity (Q)', width / 2, height - 15);
+            ctx.save();
+            ctx.translate(20, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Price (P)', 0, 0);
+            ctx.restore();
+            
+            // Draw demand curve
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let q = 0; q <= 100; q += 1) {
+                const p = demandP(q);
+                const x = xScale(q);
+                const y = yScale(p);
+                if (q === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Draw supply curve
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let q = 0; q <= 100; q += 1) {
+                const p = supplyP(q);
+                const x = xScale(q);
+                const y = yScale(p);
+                if (q === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Draw equilibrium point
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(xScale(Q0), yScale(P0), 7, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw price ceiling line
+            ctx.strokeStyle = priceCeiling < P0 ? '#dc2626' : '#9ca3af';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 5]);
+            ctx.beginPath();
+            ctx.moveTo(margin, yScale(priceCeiling));
+            ctx.lineTo(width - margin, yScale(priceCeiling));
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw black market line
+            if (showBlackMarket && shortage > 0) {
+                ctx.strokeStyle = '#7c3aed';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 5]);
+                ctx.beginPath();
+                ctx.moveTo(xScale(Qs), yScale(blackMarketPrice));
+                ctx.lineTo(xScale(Qd), yScale(blackMarketPrice));
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw line showing Qs is the quantity traded
+                ctx.strokeStyle = '#7c3aed';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(xScale(Qs), yScale(priceCeiling));
+                ctx.lineTo(xScale(Qs), yScale(blackMarketPrice));
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // Draw vertical lines for shortage
+            if (priceCeiling < P0) {
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                
+                // Qs line
+                ctx.beginPath();
+                ctx.moveTo(xScale(Qs), yScale(0));
+                ctx.lineTo(xScale(Qs), yScale(priceCeiling));
+                ctx.stroke();
+                
+                // Qd line
+                ctx.beginPath();
+                ctx.moveTo(xScale(Qd), yScale(0));
+                ctx.lineTo(xScale(Qd), yScale(priceCeiling));
+                ctx.stroke();
+                
+                ctx.setLineDash([]);
+            }
+            
+            // Labels
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('D', xScale(95), yScale(demandP(95)) - 10);
+            
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillText('S', xScale(95), yScale(supplyP(95)) + 20);
+            
+            ctx.fillStyle = '#000';
+            ctx.font = '13px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`P₀ = $${P0}`, xScale(Q0) + 40, yScale(P0) - 8);
+            ctx.fillText(`Q₀ = ${Q0}`, xScale(Q0), height - margin + 35);
+            
+            ctx.fillStyle = priceCeiling < P0 ? '#dc2626' : '#9ca3af';
+            ctx.textAlign = 'right';
+            ctx.fillText(`P_ceiling = ${priceCeiling.toFixed(1)}`, width - margin - 10, yScale(priceCeiling) + 5);
+            
+            if (priceCeiling < P0) {
+                ctx.fillStyle = '#000';
+                ctx.textAlign = 'center';
+                ctx.fillText(`Qˢ = ${Math.round(Qs)}`, xScale(Qs), height - margin + 35);
+                ctx.fillText(`Qᴅ = ${Math.round(Qd)}`, xScale(Qd), height - margin + 35);
+            }
+            
+            if (showBlackMarket && shortage > 0) {
+                ctx.fillStyle = '#7c3aed';
+                ctx.textAlign = 'right';
+                ctx.fillText(`Black Market: $${blackMarketPrice.toFixed(1)}`, width - margin - 10, yScale(blackMarketPrice) + 5);
+            }
+            
+            // Draw emojis
+            ctx.font = '24px Arial';
+            if (priceCeiling < P0) {
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillText('😃', xScale(12 + i * 12), yScale(priceCeiling) - 35);
+                }
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillText('😞', xScale(12 + i * 12), yScale(priceCeiling) + 55);
+                }
+                for (let i = 0; i < 2; i++) {
+                    ctx.fillText('😤', xScale(Qs + 12 + i * 18), yScale(priceCeiling) - 35);
+                }
+                
+                if (showBlackMarket) {
+                    ctx.fillText('💰', xScale(Qs - 18), yScale(blackMarketPrice) - 12);
+                    ctx.fillText('🤝', xScale(Qs - 18), yScale(blackMarketPrice) + 30);
+                }
+            }
+        }
+        
+        function updateExplanation() {
+            if (priceCeiling >= P0) {
+                explanationTitle.innerHTML = '⚪ No Effect - Ceiling Above Equilibrium';
+                explanationTitle.className = 'explanation-title gray-text';
+                explanationText.textContent = `The price ceiling is above the equilibrium price, so it doesn't bind. The market operates normally at P₀ = $5 and Q₀ = 50. No shortage occurs.`;
+            } else {
+                const Qd = demandQ(priceCeiling);
+                const Qs = supplyQ(priceCeiling);
+                const shortage = Qd - Qs;
+                explanationTitle.innerHTML = '📉 Binding Price Ceiling - Shortage Created';
+                explanationTitle.className = 'explanation-title red-text';
+                explanationText.textContent = `At P = $${priceCeiling.toFixed(1)}, quantity demanded (Qᴅ = ${Math.round(Qd)}) exceeds quantity supplied (Qˢ = ${Math.round(Qs)}), creating a shortage of ${Math.round(shortage)} units. Some consumers benefit from lower prices 😃, but many can't find the product 😤. Producers lose revenue 😞.`;
+            }
+            
+            // Black market info
+            if (showBlackMarket && priceCeiling < P0) {
+                const Qs = supplyQ(priceCeiling);
+                const blackMarketPrice = demandP(Qs);
+                blackMarketInfo.style.display = 'block';
+                blackMarketInfo.textContent = `Black market price: $${blackMarketPrice.toFixed(2)}. Some buyers pay above the ceiling illegally.`;
+            } else {
+                blackMarketInfo.style.display = 'none';
+            }
+        }
+        
+        function updateMetrics() {
+            const Qs = supplyQ(priceCeiling);
+            const Qd = demandQ(priceCeiling);
+            
+            let CS, PS, DWL;
+            
+            if (priceCeiling >= P0) {
+                // Non-binding case: normal equilibrium
+                CS = 0.5 * Q0 * (10 - P0);
+                PS = 0.5 * Q0 * P0;
+                DWL = 0;
+                shortageMetric.style.display = 'none';
+            } else {
+                // Binding case: Qs is the traded quantity
+                CS = 0.5 * Qs * (10 - priceCeiling);
+                PS = 0.5 * Qs * priceCeiling;
+                DWL = 0.5 * (Q0 - Qs) * (demandP(Qs) - supplyP(Qs));
+                
+                shortageMetric.style.display = 'flex';
+                shortageValue.textContent = `${Math.round(Qd - Qs)} units`;
+            }
+            
+            csValue.textContent = `$${CS.toFixed(2)}`;
+            psValue.textContent = `$${PS.toFixed(2)}`;
+            dwlValue.textContent = `$${DWL.toFixed(2)}`;
+        }
+
+        function updateCalculationBox() {
+            const P_c = priceCeiling.toFixed(2);
+            const Q_s = supplyQ(priceCeiling).toFixed(2);
+            const Q_d = demandQ(priceCeiling).toFixed(2);
+            const P_DQs = demandP(supplyQ(priceCeiling)).toFixed(2);
+            const shortage = Math.max(0, parseFloat(Q_d) - parseFloat(Q_s)).toFixed(2);
+            const P_BM = demandP(supplyQ(priceCeiling)).toFixed(2);
+            
+            let htmlContent = '';
+
+            if (priceCeiling >= P0) {
+                // Non-binding case: Equilibrium calculations
+                const CS_eq = (0.5 * Q0 * (10 - P0)).toFixed(2);
+                const PS_eq = (0.5 * Q0 * P0).toFixed(2);
+
+                htmlContent = `
+                    <div class="calc-item calc-cs">
+                        <span class="calc-label green-text">Consumer Surplus (CS)</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                CS_eq = 1/2 * Q0 * (P_max - P0)
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                CS_eq = 1/2 * ${Q0} * (10 - ${P0})
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                CS = $${CS_eq}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="calc-item calc-ps">
+                        <span class="calc-label blue-text">Producer Surplus (PS)</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                PS_eq = 1/2 * Q0 * P0
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                PS_eq = 1/2 * ${Q0} * ${P0}
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                PS = $${PS_eq}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="calc-item calc-dwl">
+                        <span class="calc-label red-text">Deadweight Loss (DWL)</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                DWL = 0 (Non-binding ceiling)
+                            </span>
+                        </span>
+                    </div>
+                    <div class="calc-item calc-shortage">
+                        <span class="calc-label" style="color: #ca8a04;">Shortage</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                Shortage = 0 (Non-binding ceiling)
+                            </span>
+                        </span>
+                    </div>
+                    <div class="calc-item calc-blackmarket">
+                        <span class="calc-label" style="color: #7c3aed;">Black Market Price (P_BM)</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                P_BM = P_ceiling (No shortage)
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                P_BM = $${P_c}
+                            </span>
+                        </span>
+                    </div>
+                `;
+            } else {
+                // Binding case: Use Qs and Pc
+                const CS_calc = (0.5 * parseFloat(Q_s) * (10 - parseFloat(P_c))).toFixed(2);
+                const PS_calc = (0.5 * parseFloat(Q_s) * parseFloat(P_c)).toFixed(2);
+                const DWL_calc = (0.5 * (Q0 - parseFloat(Q_s)) * (parseFloat(P_DQs) - parseFloat(P_c))).toFixed(2);
+
+                htmlContent = `
+                    <div class="calc-item calc-cs">
+                        <span class="calc-label green-text">Consumer Surplus (CS)</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                CS ≈ 1/2 * Q_s * (P_max - P_ceiling)
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                CS = 1/2 * ${Q_s} * (10 - ${P_c})
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                CS = $${CS_calc}
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="calc-item calc-ps">
+                        <span class="calc-label blue-text">Producer Surplus (PS)</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                PS = 1/2 * Q_s * P_ceiling
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                PS = 1/2 * ${Q_s} * ${P_c}
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                PS = $${PS_calc}
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="calc-item calc-dwl">
+                        <span class="calc-label red-text">Deadweight Loss (DWL)</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                DWL = 1/2 * (Q0 - Q_s) * (P_D(Q_s) - P_c)
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                DWL = 1/2 * (${Q0} - ${Q_s}) * (${P_DQs} - ${P_c})
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                DWL = $${DWL_calc}
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="calc-item calc-shortage">
+                        <span class="calc-label" style="color: #ca8a04;">Shortage</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                Shortage = Q_d(P_c) - Q_s(P_c)
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                Shortage = ${Q_d} - ${Q_s}
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                Shortage = ${shortage} units
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="calc-item calc-blackmarket">
+                        <span class="calc-label" style="color: #7c3aed;">Black Market Price (P_BM)</span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                P_BM = P_D(Q_s)
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                P_BM = 10 - Q_s / 10
+                            </span>
+                        </span>
+                        <span class="formula-line">
+                            <span class="plain-formula">
+                                P_BM = 10 - ${Q_s} / 10 = $${P_BM}
+                            </span>
+                        </span>
+                    </div>
+                `;
+            }
+
+            calculationGrid.innerHTML = htmlContent;
+        }
+
+        // Initial draw
+        update();
+    </script>
+</body>
+</html>
